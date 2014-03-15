@@ -49,8 +49,8 @@ TwoScene.prototype = {
 	},
 	
 	resizeCanvas : function(e) {
-		this.canvas.width = $(window).width() * this.ratio;
-		this.canvas.height = $(window).height() * this.ratio;
+		this.canvas.width = $(window).width();
+		this.canvas.height = $(window).height();
 		this.width = this.canvas.width;
 		this.height = this.canvas.height;
 		this.left = this.$canvas.offset().left;
