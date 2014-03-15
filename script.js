@@ -5,13 +5,15 @@ var TwoScene = function() {
 	this.canvas = this.$canvas.get(0);
 	this.ratio = window.devicePixelRatio >= 1 ? window.devicePixelRatio : 1;
 	this.context = this.canvas.getContext( '2d' );
+	
+	this.multiplyChance = 1 / 240;
 
 	//this.addStats();
 	this.addEventListeners();
 	
 	this.resizeCanvas();
 	
-	this.addWalkers( 150 );
+	this.addWalkers( 1 );
 	
 	this.loop();
 };
@@ -21,7 +23,6 @@ TwoScene.prototype = {
 	addWalkers : function( number ) {
 		
 		this.walkers = [];
-		this.walkersCount = number;
 		
 		for(var i=0; i < number; i++) {
 			this.walkers[i] = new Walker( this );
@@ -30,9 +31,22 @@ TwoScene.prototype = {
 	
 	drawWalkers : function() {
 		
-		for(var i=0; i < this.walkersCount; i++) {
+		var oldWalker, newWalker;
+		
+		for( var i=0; i < this.walkers.length; i++ ) {
 			this.walkers[i].update();
 			this.walkers[i].draw();
+		}
+		
+		if( Math.random() <= this.multiplyChance ) {
+			
+			oldWalker = this.walkers[ Math.floor( this.walkers.length * Math.random() ) ];
+			newWalker = new Walker( this );
+			
+			this.walkers.push( newWalker );
+			
+			newWalker.copy( oldWalker );
+
 		}
 		
 	},
@@ -66,7 +80,6 @@ TwoScene.prototype = {
 
 	},
 	
-	
 	rgbToFillStyle : function(r, g, b, a) {
 		if(a === undefined) {
 			return ["rgb(",r,",",g,",",b,")"].join('');
@@ -90,7 +103,7 @@ TwoScene.prototype = {
 		
 		this.drawWalkers();
 		
-		this.context.fillStyle = this.rgbToFillStyle(245, 245, 245, 0.01);
+		this.context.fillStyle = this.rgbToFillStyle(245, 245, 245, 0.05);
 		this.context.fillRect(0,0,this.width, this.height);
 		this.context.fill();
 	}
@@ -98,12 +111,13 @@ TwoScene.prototype = {
 };
 
 var Walker = function(scene) {
+	this.ratio = 0.5;
 	this.scene = scene;
 	this.x = 0;
 	this.y = this.scene.height / 2;
-	this.moveStep = 2;
-	this.hueStep = 1;
-	this.size = 2;
+	this.moveStep = 3;
+	this.hueStep = 3;
+	this.size = 5;
 	this.hue = (Math.random() * 45) + this.hueStart;
 	
 	
@@ -118,8 +132,8 @@ Walker.prototype = {
 	},
 	
 	update : function() {
-		this.x += Math.random() * this.moveStep;
-		this.y += this.random() * this.moveStep;
+		this.x += Math.random() * this.moveStep / this.ratio;
+		this.y += this.random() * this.moveStep * this.ratio;
 		this.hue += this.random() * this.hueStep;
 		
 		this.x %= this.scene.width;
@@ -128,14 +142,21 @@ Walker.prototype = {
 		this.hue %= 360;
 	},
 	
+	copy : function( walker ) {
+		
+		this.x = walker.x;
+		this.y = walker.y;
+		this.hue = walker.hue;
+	},
+	
 	draw : function() {
 		this.scene.context.beginPath();
 		this.scene.context.fillStyle = this.scene.hslToFillStyle(this.hue, 100, 50, 0.5);
 		this.scene.context.fillRect(
 			this.x,
 			this.y,
-			this.size,
-			this.size
+			this.size / this.ratio,
+			this.size * this.ratio
 		);
 		this.scene.context.fill();
 	}
