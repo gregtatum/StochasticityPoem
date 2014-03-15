@@ -89,13 +89,17 @@ TwoScene.prototype = {
 		//this.context.clearRect(0,0,this.width, this.height);
 		
 		this.drawWalkers();
+		
+		this.context.fillStyle = this.rgbToFillStyle(245, 245, 245, 0.01);
+		this.context.fillRect(0,0,this.width, this.height);
+		this.context.fill();
 	}
 	
 };
 
 var Walker = function(scene) {
 	this.scene = scene;
-	this.x = this.scene.width / 2;
+	this.x = 0;
 	this.y = this.scene.height / 2;
 	this.moveStep = 2;
 	this.hueStep = 1;
@@ -114,7 +118,7 @@ Walker.prototype = {
 	},
 	
 	update : function() {
-		this.x += this.random() * this.moveStep;
+		this.x += Math.random() * this.moveStep;
 		this.y += this.random() * this.moveStep;
 		this.hue += this.random() * this.hueStep;
 		
