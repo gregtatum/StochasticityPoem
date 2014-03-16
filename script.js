@@ -15,6 +15,8 @@ var TwoScene = function() {
 	
 	this.addWalkers( 1 );
 	
+	this.maxWalkers = 500;
+	
 	this.loop();
 };
 		
@@ -38,7 +40,7 @@ TwoScene.prototype = {
 			this.walkers[i].draw();
 		}
 		
-		if( Math.random() <= this.multiplyChance ) {
+		if( Math.random() <= this.multiplyChance && this.walkers.length < this.maxWalkers ) {
 			
 			oldWalker = this.walkers[ Math.floor( this.walkers.length * Math.random() ) ];
 			newWalker = new Walker( this );
