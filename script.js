@@ -7,13 +7,14 @@ var TwoScene = function() {
 	this.context = this.canvas.getContext( '2d' );
 	
 	this.multiplyChance = 1 / 240;
-
+	this.maxWalkers = 200;
+	
 	//this.addStats();
 	this.addEventListeners();
 	
 	this.resizeCanvas();
 	
-	this.addWalkers( 1 );
+	this.addWalkers( 10 );
 	
 	this.loop();
 };
@@ -38,7 +39,7 @@ TwoScene.prototype = {
 			this.walkers[i].draw();
 		}
 		
-		if( Math.random() <= this.multiplyChance ) {
+		if( Math.random() <= this.multiplyChance && this.walkers.length < this.maxWalkers ) {
 			
 			oldWalker = this.walkers[ Math.floor( this.walkers.length * Math.random() ) ];
 			newWalker = new Walker( this );
@@ -103,7 +104,7 @@ TwoScene.prototype = {
 		
 		this.drawWalkers();
 		
-		this.context.fillStyle = this.rgbToFillStyle(245, 245, 245, 0.05);
+		this.context.fillStyle = this.rgbToFillStyle(245, 245, 245, 0.025);
 		this.context.fillRect(0,0,this.width, this.height);
 		this.context.fill();
 	}
@@ -111,16 +112,27 @@ TwoScene.prototype = {
 };
 
 var Walker = function(scene) {
-	this.ratio = 0.5;
+	this.ratio = 1;
 	this.scene = scene;
-	this.x = 0;
-	this.y = this.scene.height / 2;
-	this.moveStep = 3;
+	this.r = 0;
+	this.theta = 0;
+	
+	this.originX = this.scene.width / 2;
+	this.originY = this.scene.height / 2;
+	
+	this.x = this.originX;
+	this.y = this.originY;
+	this.prevX = this.originX;
+	this.prevY = this.originY;
+
+	
+	this.moveStep = 6;
 	this.hueStep = 3;
-	this.size = 5;
+	this.sizeBase = 1;
+	this.sizeAdder = 20;
 	this.hue = (Math.random() * 45) + this.hueStart;
 	
-	
+	this.update();
 };
 
 Walker.prototype = {
@@ -131,34 +143,54 @@ Walker.prototype = {
 		return Math.random() * 2 - 1;
 	},
 	
+	copy : function( walker ) {
+		
+		
+		this.x = walker.x;
+		this.y = walker.y;
+		this.r = walker.r;
+		this.theta = walker.theta;
+		this.hue = walker.hue;
+		this.prevX = walker.prevX;
+		this.prevY = walker.prevY;
+	},
+	
 	update : function() {
-		this.x += Math.random() * this.moveStep / this.ratio;
-		this.y += this.random() * this.moveStep * this.ratio;
+		
+		this.theta += Math.random() * this.moveStep / this.ratio / 90;
+		this.r += this.random() * this.moveStep;
 		this.hue += this.random() * this.hueStep;
 		
-		this.x %= this.scene.width;
-		this.y %= this.scene.height;
+		this.prevX = this.x;
+		this.prevY = this.y;
+		
+		this.x = Math.cos( this.theta ) * this.r + this.originX;
+		this.y = Math.sin( this.theta ) * this.r + this.originY;
+		
+		
+		//this.x %= this.scene.width;
+		//this.y %= this.scene.height;
 		
 		this.hue %= 360;
 	},
 	
-	copy : function( walker ) {
-		
-		this.x = walker.x;
-		this.y = walker.y;
-		this.hue = walker.hue;
-	},
-	
 	draw : function() {
 		this.scene.context.beginPath();
-		this.scene.context.fillStyle = this.scene.hslToFillStyle(this.hue, 100, 50, 0.5);
-		this.scene.context.fillRect(
+		
+		
+		this.scene.context.strokeStyle = this.scene.hslToFillStyle(this.hue, 100, 50, 0.5);
+		this.scene.context.lineWidth =  this.r / 2;
+		this.scene.context.lineCap = 'round';
+		
+		this.scene.context.moveTo(this.prevX, this.prevY);
+		this.scene.context.lineTo(
 			this.x,
-			this.y,
-			this.size / this.ratio,
-			this.size * this.ratio
+			this.y
 		);
-		this.scene.context.fill();
+		
+		this.scene.context.stroke();
+		
+		
 	}
 	
 };
