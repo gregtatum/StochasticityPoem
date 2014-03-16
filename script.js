@@ -7,6 +7,8 @@ var TwoScene = function() {
 	this.context = this.canvas.getContext( '2d' );
 	
 	this.multiplyChance = 1 / 240;
+	
+	this.vectorFlow = new VectorFlow( this );
 
 	//this.addStats();
 	this.addEventListeners();
@@ -108,6 +110,8 @@ TwoScene.prototype = {
 		this.context.fillStyle = this.rgbToFillStyle(245, 245, 245, 0.05);
 		this.context.fillRect(0,0,this.width, this.height);
 		this.context.fill();
+		
+		this.vectorFlow.drawCells();
 	}
 	
 };
@@ -163,6 +167,205 @@ Walker.prototype = {
 		this.scene.context.fill();
 	}
 	
+};
+
+var VectorFlow = function(scene) {
+	this.scene = scene;
+	this.targetCellWidth = 200;
+	
+	this.arrowLength = 0.5;
+	
+	this.strokeStyle = this.scene.rgbToFillStyle(0,0,0,0.2);
+	this.lineWidth = 2;
+	this.lineCap = "round";
+	
+	this.grid = {
+		cells : [],
+		width : Math.ceil( $(window).width() / this.targetCellWidth ),
+		height : Math.ceil( $(window).height() / this.targetCellWidth ),
+		position : new THREE.Vector2(),
+		cellSize : new THREE.Vector2()
+	}
+	
+	this.generateGrid();
+	this.updateSceneCoordinates();
+	this.defineArrow();
+}
+
+VectorFlow.prototype = {
+	
+	generateGrid : function() {
+		
+		var cells = this.grid.cells,
+			i, j, position = new THREE.Vector2(),
+			cell;
+		
+		for( i = 0; i < this.grid.width; i++) {
+			
+			cells[ i ] = [];
+			
+			for(j=0; j < this.grid.height; j++) {
+				
+				cell = {
+					
+					vector : this.setDirection( new THREE.Vector2(), position.set(i,j) ),
+					gridCoordinates : new THREE.Vector2(i, j),
+					sceneCoordinates : new THREE.Vector2(),
+					pixelCenter : new THREE.Vector2(),
+					theta : undefined
+				};
+				
+				cell.theta = Math.atan2( cell.vector.y, cell.vector.x );
+				cell.theta = Math.PI * 2 * Math.random();
+				cell.theta = 0;
+				
+				cells[ i ][ j ] = cell;
+			}
+		}
+	},
+	
+	updateSceneCoordinates : function() {
+		
+		var cells = this.grid.cells,
+			i, j,
+			cell;
+		
+		this.grid.cellSize = new THREE.Vector2(
+			$(window).width() / this.grid.width,
+			$(window).height() / this.grid.height
+		);
+		
+		console.log(this.grid.width, this.grid.height, this.grid.cellSize.x, this.grid.cellSize.y);
+		
+		for( i = 0; i < this.grid.width; i++) {
+			for(j=0; j < this.grid.height; j++) {
+				
+				cell = cells[ i ][ j ];
+				
+				cell.sceneCoordinates.set(
+					i * this.grid.cellSize.x,
+					j * this.grid.cellSize.y
+				);
+				
+				cell.pixelCenter
+					.copy( this.grid.cellSize )
+					.multiplyScalar( 0.5 )
+					.add( cell.sceneCoordinates );
+					
+					console.log(i,j,cell.sceneCoordinates.x, cell.sceneCoordinates.y)
+			}
+		}
+	},
+	
+	setDirection : function( vector, position ) {
+		
+		vector.set( Math.random(), Math.random() );
+		vector.normalize();
+		
+		return vector;
+	},
+	
+	defineArrow : function() {
+		
+		var i, cellSize, halfLengthY;
+		
+		this.arrowPoints = [
+			new THREE.Vector2(),
+			new THREE.Vector2(),
+			new THREE.Vector2(),
+			new THREE.Vector2()
+		];
+		this.drawPoints = [
+			new THREE.Vector2(),
+			new THREE.Vector2(),
+			new THREE.Vector2(),
+			new THREE.Vector2()
+		];
+		
+		this.arrowBase = this.arrowPoints[0];
+		this.arrowTip = this.arrowPoints[1];
+		this.arrowTipL = this.arrowPoints[2];
+		this.arrowTipR = this.arrowPoints[3];
+		
+		this.drawBase = this.drawPoints[0];
+		this.drawTip = this.drawPoints[1];
+		this.drawTipL = this.drawPoints[2];
+		this.drawTipR = this.drawPoints[3];
+			
+		this.arrowLengths = [];
+		
+		cellSize = this.grid.cellSize;
+		halfLengthY = (this.arrowLength * cellSize.y) / 2;
+		
+		this.arrowBase.set(
+			0,
+			halfLengthY * -1
+		);
+		
+		this.arrowTip.set(
+			0,
+			halfLengthY
+		);
+		
+		this.arrowTipL.set(
+			this.arrowLength * cellSize.x / -4,
+			(this.arrowLength * cellSize.y) / 4
+		);
+		
+		this.arrowTipR.set(
+			this.arrowLength * cellSize.x / 4,
+			(this.arrowLength * cellSize.y) / 4
+		);
+		
+		for(i=0; i < this.arrowPoints.length; i++) {
+			this.arrowLengths.push( this.arrowPoints[i].length() );
+		}
+	},
+	
+	drawCell : function( cell ) {
+			
+		//Rotate the points
+		for(i=0; i < this.arrowPoints.length; i++) {
+			
+			this.drawPoints[i].x = Math.cos( cell.theta ) * this.arrowLengths[i];
+			this.drawPoints[i].y = Math.sin( cell.theta ) * this.arrowLengths[i];
+			
+			debugger;
+			
+			this.drawPoints[i].add( cell.pixelCenter );
+		}
+		
+		
+		//Draw the points
+		this.scene.context.moveTo(this.drawBase.x,	this.drawBase.y);
+		this.scene.context.lineTo(this.drawTip.x,	this.drawTip.x);
+		
+		
+		//this.scene.context.lineTo(this.drawTipL.x,	this.drawTipL.y);
+		//this.scene.context.moveTo(this.drawTip.x,	this.drawTip.y);
+		//this.scene.context.lineTo(this.drawTipR.x,	this.drawTipR.y);
+		this.scene.context.stroke();
+		
+	},
+	
+	drawCells : function() {
+		var cells = this.grid.cells,
+			position = new THREE.Vector2(),
+			cell;
+		
+		this.scene.context.strokeStyle = this.strokeStyle;
+		this.scene.context.lineWidth = this.lineWidth;
+		this.scene.context.lineCap = this.lineCap;
+	
+		for( position.x = 0; position.x < this.grid.width; position.x++) {
+			for(position.y=0; position.y < this.grid.height; position.y++) {
+				
+				this.drawCell( cells[ position.x ][ position.y ] );
+			}
+		}
+		
+		debugger;
+	}
 };
 
 var twoScene;
