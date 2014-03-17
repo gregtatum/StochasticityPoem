@@ -1,6 +1,7 @@
-#Stochasticity - A programming poem on randomness
+#Stochasticity
+###Programming poems on randomness
 
-This is a series of programming poems on on visual randomness using an HTML5 canvas element, and 2d drawing. I removed all of the source code from the master branch as I'm iterating on each version. You'll find each poem as a separate branch on this repo.
+This is a series of programming poems on on visual randomness using an HTML5 canvas element, and 2d drawing. All of the source code for each poem is located in separate branches as I'm iterating on the codebase.
 
 * [Stochasticity #1](http://gregtatum.com/poems/stochasticity/)
 * [Stochasticity #2](http://gregtatum.com/poems/stochasticity-2/)
