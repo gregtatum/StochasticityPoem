@@ -11,15 +11,21 @@
 		
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		
-		<script>var THREE = {};</script>
+		<script>
+			var THREE = {};
+			var PERLIN = {};
+		</script>
 		<script src='http://codeorigin.jquery.com/jquery-1.10.2.min.js'></script>
 		<script src='vendor/Vector2.js'></script>
 		<script src="vendor/stats.min.js"></script>
+		<script src="vendor/perlin.js"></script>
 		<script src='script.js'></script>
 	</head>
 	<body>
 		<div id='container'>
-			<canvas></canvas>
+			<canvas id="vectors"></canvas>
+			<canvas id="colors"></canvas>
+			<!--
 			<div class='info'>
 				<h1>Stochasticity #5</h1>
 				<p>A programming poem on randomness</p>
@@ -29,6 +35,7 @@
 				Why not <a href='https://twitter.com/intent/tweet/?text=%40TatumCreative' target='_new'>tweet @ me</a>?
 				Fork this on <a href='http://github.com/TatumCreative/StochasticityPoem/'>GitHub</a>.
 			</footer>
+				-->
 		</div>
 	</body>
 </html>
