@@ -11,7 +11,7 @@ var TwoScene = function() {
 	
 	this.resizeCanvas();
 	
-	this.addWalkers( 150 );
+	this.addWalkers( 400 );
 	
 	this.loop();
 };
@@ -90,7 +90,7 @@ TwoScene.prototype = {
 		
 		this.drawWalkers();
 		
-		this.context.fillStyle = this.rgbToFillStyle(245, 245, 245, 0.01);
+		this.context.fillStyle = this.rgbToFillStyle(220, 220, 220, 0.01);
 		this.context.fillRect(0,0,this.width, this.height);
 		this.context.fill();
 	}
