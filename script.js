@@ -22,6 +22,7 @@ var TwoScene = function() {
 	
 	this.addStats();
 	this.vectorFlow = new VectorFlow( this, this.contextVectors );
+	//this.addWalkers( 125 );
 	this.addWalkers( 1 );
 	
 	
@@ -47,7 +48,7 @@ TwoScene.prototype = {
 			this.walkers[i].update();
 			this.walkers[i].draw();
 		}
-		
+		/*
 		if( Math.random() <= this.multiplyChance && this.walkers.length < this.maxWalkers ) {
 			
 			oldWalker = this.walkers[ Math.floor( this.walkers.length * Math.random() ) ];
@@ -57,7 +58,7 @@ TwoScene.prototype = {
 			
 			newWalker.copy( oldWalker );
 
-		}
+		}*/
 		
 	},
 	
@@ -86,6 +87,13 @@ TwoScene.prototype = {
 		
 		this.left = this.$canvasColors.offset().left;
 		this.top = this.$canvasColors.offset().top;
+		
+		Walker.prototype.maxDistanceSq = Math.min(this.width * this.width, this.height * this.height) / 2;
+		if(this.vectorFlow !== undefined) {
+			this.vectorFlow.generateGrid();
+			this.vectorFlow.updateSceneCoordinates();
+		}
+		
 	},
 			
 	loop : function() {
@@ -118,8 +126,8 @@ TwoScene.prototype = {
 		
 		this.drawWalkers();
 		
-		//this.contextColors.fillStyle = this.rgbToFillStyle(245, 245, 245, 0.001);
-		//this.contextColors.fillRect(0,0,this.width, this.height);
+		this.contextColors.fillStyle = this.rgbToFillStyle(245, 245, 245, 0.01);
+		this.contextColors.fillRect(0,0,this.width, this.height);
 		
 		//Vectors
 		this.contextVectors.clearRect(0,0,this.width, this.height);
@@ -129,13 +137,16 @@ TwoScene.prototype = {
 };
 
 var Walker = function( scene, context, vectorFlow ) {
+	
 	this.context = context;
 	this.vectorFlow = vectorFlow;
 	
 	this.ratio = 0.5;
 	this.scene = scene;
-	this.x = 0;
-	this.y = this.scene.height / 2;
+	this.x = this.scene.width * Math.random();
+	this.y = this.scene.height * Math.random();
+	this.prevX = this.x;
+	this.prevX = this.y;
 	this.moveStep = 3;
 	this.hueStep = 3;
 	this.size = 5;
@@ -145,6 +156,8 @@ var Walker = function( scene, context, vectorFlow ) {
 Walker.prototype = {
 	
 	hueStart : 360 * Math.random(),
+	
+	maxDistanceSq : 0,
 	
 	random : function() {
 		return Math.random() * 2 - 1;
@@ -156,12 +169,16 @@ Walker.prototype = {
 		
 		var cell = this.vectorFlow.getCellAtSceneCoordinate(this.x, this.y);
 		
-		this.x += Math.cos( cell.theta ) * this.moveStep;
-		this.y += Math.sin( cell.theta ) * this.moveStep;
+		this.prevX = this.x;
+		this.prevY = this.y;
+		
+		this.x += Math.cos( cell.theta ) * this.moveStep + this.scene.width;	//Add on the modulo amount to ensure positive numbers;
+		this.y += Math.sin( cell.theta ) * this.moveStep + this.scene.height;
+		
 		this.hue += this.random() * this.hueStep;
 		
-		this.x %= this.scene.width;
-		this.y %= this.scene.height;
+		this.x = this.x % this.scene.width;
+		this.y = this.y % this.scene.height;
 		
 		this.hue %= 360;
 	},
@@ -170,19 +187,31 @@ Walker.prototype = {
 		
 		this.x = walker.x;
 		this.y = walker.y;
+		this.prevX = walker.prevX;
+		this.prevY = walker.prevY;
 		this.hue = walker.hue;
 	},
 	
 	draw : function() {
+		
+		var distanceSq = Math.pow(this.x - this.prevX, 2) + Math.pow(this.y - this.prevY, 2);
+		
+		if(distanceSq > this.maxDistanceSq) return;
+		
 		this.context.beginPath();
-		this.context.fillStyle = this.scene.hslToFillStyle(this.hue, 100, 50, 0.5);
-		this.context.fillRect(
+		this.context.strokeStyle = this.scene.hslToFillStyle(this.hue, 100, 50, 0.5);
+		//this.context.strokeStyle = this.scene.hslToFillStyle(this.hue, 100, 0, 1);
+		this.context.lineWidth =  2;
+		this.context.lineCap = 'round';
+		
+		this.context.moveTo(this.prevX, this.prevY);
+		this.context.lineTo(
 			this.x,
-			this.y,
-			this.size / this.ratio,
-			this.size * this.ratio
+			this.y
 		);
-		this.context.fill();
+		
+		this.context.stroke();
+		this.context.closePath();
 	}
 	
 };
@@ -194,7 +223,7 @@ var VectorFlow = function( scene, context ) {
 	
 	this.arrowLength = 0.5;
 	
-	this.strokeStyle = this.scene.rgbToFillStyle(0,0,0, 0.5);
+	this.strokeStyle = this.scene.rgbToFillStyle(0,0,0, 0.25);
 	this.lineWidth = 1;
 	this.lineCap = "butt";
 	
@@ -219,9 +248,12 @@ VectorFlow.prototype = {
 	
 	generateGrid : function() {
 		
-		var cells = this.grid.cells,
-			i, j, position = new THREE.Vector2(),
-			cell;
+		var cells, cell,
+			i, j;
+		
+		this.grid.cells = [];
+		
+		cells = this.grid.cells;
 		
 		for( i = 0; i < this.grid.width; i++) {
 			
@@ -230,11 +262,11 @@ VectorFlow.prototype = {
 			for(j=0; j < this.grid.height; j++) {
 				
 				cell = {
-					vector : this.setDirection( new THREE.Vector2(), position.set(i,j) ),
-					gridCoordinates : new THREE.Vector2(i, j),
-					sceneCoordinates : new THREE.Vector2(),
-					pixelCenter : new THREE.Vector2(),
-					theta : PERLIN.noise.simplex3(i,j,0)
+					vector :			new THREE.Vector2( Math.random(), Math.random() ),
+					gridCoordinates :	new THREE.Vector2(i, j),
+					sceneCoordinates :	new THREE.Vector2(),
+					pixelCenter :		new THREE.Vector2(),
+					theta :				PERLIN.noise.simplex3(i,j,0) //Scalar value
 				};
 				
 				cells[ i ][ j ] = cell;
@@ -273,14 +305,6 @@ VectorFlow.prototype = {
 		averageCellSize = ( this.grid.cellSize.x + this.grid.cellSize.y ) / 2;
 		this.noiseSpeed = 0.0001 / averageCellSize;
 		this.noiseScale = averageCellSize;
-	},
-	
-	setDirection : function( vector, position ) {
-		
-		vector.set( Math.random(), Math.random() );
-		vector.normalize();
-		
-		return vector;
 	},
 	
 	defineArrow : function() {
@@ -407,6 +431,8 @@ VectorFlow.prototype = {
 				
  		i = Math.floor( x / cellSize.x );
 		j = Math.floor( y / cellSize.y );
+		
+		if(i < 0 || i > this.grid.width - 1 || j < 0 || i > this.grid.height) console.warn( "Error!" );
 		
 		i = Math.max(i, 0);
 		j = Math.max(j, 0);
