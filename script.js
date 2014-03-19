@@ -7,14 +7,14 @@ var TwoScene = function() {
 	this.context = this.canvas.getContext( '2d' );
 	
 	this.multiplyChance = 1 / 240;
-	this.maxWalkers = 200;
+	this.maxWalkers = 16;
 	
 	//this.addStats();
 	this.addEventListeners();
 	
 	this.resizeCanvas();
 	
-	this.addWalkers( 10 );
+	this.addWalkers( 1 );
 	
 	this.loop();
 };
@@ -38,7 +38,7 @@ TwoScene.prototype = {
 			this.walkers[i].update();
 			this.walkers[i].draw();
 		}
-		
+
 		if( Math.random() <= this.multiplyChance && this.walkers.length < this.maxWalkers ) {
 			
 			oldWalker = this.walkers[ Math.floor( this.walkers.length * Math.random() ) ];
@@ -71,7 +71,11 @@ TwoScene.prototype = {
 		this.left = this.$canvas.offset().left;
 		this.top = this.$canvas.offset().top;
 		
-		console.log(this.width, this.height);
+		if( this.walkers ) {
+			for( var i=0; i < this.walkers.length; i++ ) {
+				this.walkers[i].onResize();
+			}
+		}
 	},
 			
 	loop : function() {
@@ -132,10 +136,27 @@ var Walker = function(scene) {
 	this.sizeAdder = 20;
 	this.hue = (Math.random() * 45) + this.hueStart;
 	
+	this.soundWalker = new SoundWalker();
+	
+	var note = Math.floor(this.noteFrequencies.length * Math.random() );
+	this.soundWalker.setFrequency( this.noteFrequencies[ note ] );
+	
 	this.update();
 };
 
 Walker.prototype = {
+	
+	alphabet : "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".split(""),
+	
+	noteFrequencies : (function() {
+		
+		var eMinor7th = Note.fromLatin('E3G3B3D3E4G4B4D4');
+		
+		return eMinor7th.map(function(note) {
+			return note.frequency();
+		});
+		
+	})(),
 	
 	hueStart : 360 * Math.random(),
 	
@@ -155,10 +176,18 @@ Walker.prototype = {
 		this.prevY = walker.prevY;
 	},
 	
+	onResize : function() {
+	
+		this.originX = this.scene.width / 2;
+		this.originY = this.scene.height / 2;
+	},
+	
 	update : function() {
 		
+		this.rRandom = this.random();
+		
 		this.theta += Math.random() * this.moveStep / this.ratio / 90;
-		this.r += this.random() * this.moveStep;
+		this.r += this.rRandom * this.moveStep;
 		this.hue += this.random() * this.hueStep;
 		
 		this.prevX = this.x;
@@ -166,6 +195,23 @@ Walker.prototype = {
 		
 		this.x = Math.cos( this.theta ) * this.r + this.originX;
 		this.y = Math.sin( this.theta ) * this.r + this.originY;
+		
+		var positionX = (this.x - this.scene.width / 2) / (this.scene.width / 2);
+		var positionY = (this.y - this.scene.height / 2) / (this.scene.height / 2);
+		
+		
+		this.soundWalker.setPosition(
+			positionX * 10,
+			positionY * 10,
+			-0.5
+		);
+		
+		this.soundWalker.setGain(
+			0.5 * this.rRandom
+		);
+		
+		this.soundWalker.setFilterFrequency( 50 + Math.abs( positionY ) * 300 );
+		this.soundWalker.setQ( Math.abs( positionX * 2 ) );
 		
 		
 		//this.x %= this.scene.width;
@@ -175,11 +221,12 @@ Walker.prototype = {
 	},
 	
 	draw : function() {
+		/*
 		this.scene.context.beginPath();
 		
 		
 		this.scene.context.strokeStyle = this.scene.hslToFillStyle(this.hue, 100, 50, 0.5);
-		this.scene.context.lineWidth =  this.r / 2;
+		this.scene.context.lineWidth =  5;
 		this.scene.context.lineCap = 'round';
 		
 		this.scene.context.moveTo(this.prevX, this.prevY);
@@ -190,12 +237,101 @@ Walker.prototype = {
 		
 		this.scene.context.stroke();
 		
+		this.scene.context.closePath();
+		*/
+		
+		var letter = Math.floor( this.alphabet.length * Math.random() );
+		
+		this.scene.context.font= [ (this.rRandom * 9 + 4) , "px sans-serif"].join("");
+		this.scene.context.fillStyle = this.scene.hslToFillStyle(this.hue, 100, 50, 0.8);
+		this.scene.context.fillText(this.alphabet[letter], this.x, this.y);
 		
 	}
 	
 };
 
 var twoScene;
+
+var AudioContext = AudioContext || webkitAudioContext;
+
+var SoundWalker = function() {
+	
+	this.context.listener.setPosition(0, 0, 0);
+	
+	this.panner = this.context.createPanner();
+	this.panner.panningModel = 'equalpower';
+	this.panner.coneOuterGain = 0.1;
+	this.panner.coneOuterAngle = 180;
+	this.panner.coneInnerAngle = 0;
+	
+	this.oscillator = this.context.createOscillator();
+	this.oscillator.type = "sawtooth";
+	this.oscillator.frequency.value = 2000;	
+	/*
+		enum OscillatorType {
+		  "sine",
+		  "square",
+		  "sawtooth",
+		  "triangle",
+		  "custom"
+		}
+	*/
+
+	this.gain = this.context.createGain();
+	this.gain.gain.value = 0.5;
+	
+	this.filter = this.context.createBiquadFilter();
+	this.filter.type = "bandpass";
+	this.filter.frequency.value = 440;
+	this.filter.Q.value = 0.5;
+	
+	this.oscillator.connect( this.filter );
+	this.filter.connect( this.panner );
+	this.panner.connect( this.gain );
+	this.gain.connect( this.context.destination );
+	
+	this.oscillator.start(0);
+	
+	this.totalCreated++;
+	this.totalCreatedSq = this.totalCreated * this.totalCreated;
+};
+
+SoundWalker.prototype = {
+	
+	context : new AudioContext(),
+	
+	totalCreated : 0,
+	
+	setFrequency : function ( frequency ) {	
+		this.oscillator.frequency.setTargetAtTime(frequency, this.context.currentTime, 0.1);
+	},
+	
+	setPosition : function ( x, y, z ) {
+		this.panner.setPosition( x, y, z );
+	},
+	
+	setGain : function ( gain ) {
+		
+
+		
+		Math.max( Math.abs( gain ), 1);
+		
+		gain / this.totalCreatedSq;
+				
+		this.gain.gain.setTargetAtTime(gain, this.context.currentTime, 0.1)
+	},
+	
+	setQ : function ( Q ) {
+		this.filter.Q.setTargetAtTime(Q, this.context.currentTime, 0.1);
+	},
+	
+	setFilterFrequency : function ( frequency ) {
+		this.filter.frequency.setTargetAtTime(frequency, this.context.currentTime, 0.1);
+	}
+};
+
+//sound = new SoundWalker();
+
 
 $(function() {
 	twoScene = new TwoScene();
