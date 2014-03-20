@@ -210,8 +210,8 @@ Walker.prototype = {
 			0.5 * this.rRandom
 		);
 		
-		this.soundWalker.setFilterFrequency( 50 + Math.abs( positionY ) * 300 );
-		this.soundWalker.setQ( Math.abs( positionX * 2 ) );
+		this.soundWalker.setBandpassFrequency( 50 + Math.abs( positionY ) * 300 );
+		this.soundWalker.setBandpassQ( Math.abs( positionX * 2 ) );
 		
 		
 		//this.x %= this.scene.width;
@@ -280,13 +280,13 @@ var SoundWalker = function() {
 	this.gain = this.context.createGain();
 	this.gain.gain.value = 0.5;
 	
-	this.filter = this.context.createBiquadFilter();
-	this.filter.type = "bandpass";
-	this.filter.frequency.value = 440;
-	this.filter.Q.value = 0.5;
+	this.bandpass = this.context.createBiquadFilter();
+	this.bandpass.type = "bandpass";
+	this.bandpass.frequency.value = 440;
+	this.bandpass.Q.value = 0.5;
 	
-	this.oscillator.connect( this.filter );
-	this.filter.connect( this.panner );
+	this.oscillator.connect( this.bandpass );
+	this.bandpass.connect( this.panner );
 	this.panner.connect( this.gain );
 	this.gain.connect( this.context.destination );
 	
@@ -321,12 +321,12 @@ SoundWalker.prototype = {
 		this.gain.gain.setTargetAtTime(gain, this.context.currentTime, 0.1)
 	},
 	
-	setQ : function ( Q ) {
-		this.filter.Q.setTargetAtTime(Q, this.context.currentTime, 0.1);
+	setBandpassQ : function ( Q ) {
+		this.bandpass.Q.setTargetAtTime(Q, this.context.currentTime, 0.1);
 	},
 	
-	setFilterFrequency : function ( frequency ) {
-		this.filter.frequency.setTargetAtTime(frequency, this.context.currentTime, 0.1);
+	setBandpassFrequency : function ( frequency ) {
+		this.bandpass.frequency.setTargetAtTime(frequency, this.context.currentTime, 0.1);
 	}
 };
 
