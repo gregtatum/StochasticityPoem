@@ -5,6 +5,8 @@ This is a series of programming poems on on visual randomness using an HTML5 can
 
 * [Stochasticity #1](http://gregtatum.com/poems/stochasticity/)
 * [Stochasticity #2](http://gregtatum.com/poems/stochasticity-2/)
-* Stochasticity #3 (coming soon)
+* [Stochasticity #3](http://gregtatum.com/poems/stochasticity-3/)
+* [Stochasticity #4](http://gregtatum.com/poems/stochasticity-4/)
+* Stochasticity #5 (coming soon)
 
 Project copyright (c) 2014 Greg Tatum under GPL v3.
