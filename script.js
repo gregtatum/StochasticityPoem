@@ -22,8 +22,8 @@ var TwoScene = function() {
 	
 	this.addStats();
 	this.vectorFlow = new VectorFlow( this, this.contextVectors );
-	//this.addWalkers( 125 );
-	this.addWalkers( 1 );
+	this.addWalkers( 125 );
+	//this.addWalkers( 1 );
 	
 	
 	this.loop();
@@ -126,8 +126,8 @@ TwoScene.prototype = {
 		
 		this.drawWalkers();
 		
-		//this.contextColors.fillStyle = this.rgbToFillStyle(245, 245, 245, 0.01);
-		//this.contextColors.fillRect(0,0,this.width, this.height);
+		this.contextColors.fillStyle = this.rgbToFillStyle(245, 245, 245, 0.01);
+		this.contextColors.fillRect(0,0,this.width, this.height);
 		
 		//Vectors
 		this.contextVectors.clearRect(0,0,this.width, this.height);
@@ -432,7 +432,7 @@ VectorFlow.prototype = {
  		i = Math.floor( x / cellSize.x );
 		j = Math.floor( y / cellSize.y );
 		
-		if(i < 0 || i > this.grid.width - 1 || j < 0 || i > this.grid.height) console.warn( "Error!" );
+		//if(i < 0 || i > this.grid.width - 1 || j < 0 || i > this.grid.height) console.warn( "Error!" );
 		
 		i = Math.max(i, 0);
 		j = Math.max(j, 0);
