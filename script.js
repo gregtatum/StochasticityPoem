@@ -12,7 +12,7 @@ var TwoScene = function() {
 	this.contextVectors = this.canvasVectors.getContext( '2d' );
 	
 	this.multiplyChance = 1 / 240;
-	this.stats = true;
+	this.stats = false;
 	this.maxWalkers = 500;
 	
 	this.resizeCanvas();
@@ -126,8 +126,8 @@ TwoScene.prototype = {
 		
 		this.drawWalkers();
 		
-		this.contextColors.fillStyle = this.rgbToFillStyle(245, 245, 245, 0.01);
-		this.contextColors.fillRect(0,0,this.width, this.height);
+		//this.contextColors.fillStyle = this.rgbToFillStyle(245, 245, 245, 0.01);
+		//this.contextColors.fillRect(0,0,this.width, this.height);
 		
 		//Vectors
 		this.contextVectors.clearRect(0,0,this.width, this.height);
