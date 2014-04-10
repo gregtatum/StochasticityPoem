@@ -2,104 +2,39 @@ var TwoScene = function() {
 	
 	this.setPolyfills();
 	
-	this.webcamPromise = this.startWebcam();
-	
-	this.attachWebcamToVideo();
-	
 	this.div = document.getElementById( 'container' );
 	this.$canvas = $('canvas');
 	this.canvas = this.$canvas.get(0);
-	this.$video = $('video');
-	this.video = this.$video.get(0);
 	this.ratio = window.devicePixelRatio >= 1 ? window.devicePixelRatio : 1;
 	this.context = this.canvas.getContext( '2d' );
-	this.flip = false;
 	
 	//this.addStats();
 	this.addEventListeners();
 	
 	this.resizeCanvas();
 	
+	this.webcam = new WebcamSampler( this );
 	this.addWalkers( 250 );
 };
 
 TwoScene.prototype = {
 
-	startWebcam : function() {
-		
-		var deferred = new $.Deferred();
-		
-		navigator.getUserMedia ({
-				video: {
-					mandatory: { maxWidth: 320, maxHeight: 180	}
-				  },
-				audio: false
-			},
-			function(localMediaStream) {
-				deferred.resolve(localMediaStream);
-			},
-			function( error ) {
-				deferred.reject( error );
-			}
-
-		);
-		
-		return 	deferred.promise();
-	},
-	
-	attachWebcamToVideo : function() {
-		$.when(this.webcamPromise).then( function(localMediaStream) {
-
-			this.video.src = window.URL.createObjectURL(localMediaStream);
-			this.$videoCanvas = $('<canvas></canvas>');
-			this.$videoCanvas.hide().appendTo('body');
-			this.videoCanvas = this.$videoCanvas.get(0);
-			this.videoCanvas.width = this.$video.width();
-			this.videoCanvas.height = this.$video.height();
-			this.videoCanvasContext = this.videoCanvas.getContext('2d');
-			
-			this.loop();
-			
-		}.bind(this), function( error ) {
-			$('#webcam-error').show();
-			console.log(error);
-		}).always(function() {
-			$('#webcam-please').hide();
-		});
-	},
-	
-	updateColorSample : function() {
-		this.videoCanvasContext.drawImage(this.video, 0, 0, this.videoCanvas.width, this.videoCanvas.height);
-		this.imageData = this.videoCanvasContext.getImageData(0, 0, this.videoCanvas.width, this.videoCanvas.height);
-	},
-	
-	sampleColor : function( walker ) {
-		if(this.imageData) {
-			var x = Math.floor(((this.width - walker.x) / this.width) * this.imageData.width);
-			var y = Math.floor((walker.y / this.height) * this.imageData.height);
-			
-			var offset = (x + y * this.imageData.width) * 4;
-			
-			walker.r = this.imageData.data[offset + 0];
-			walker.g = this.imageData.data[offset + 1];
-			walker.b = this.imageData.data[offset + 2];
-			
-		}
-	},
-
 	setPolyfills : function() {
-		navigator.getUserMedia =	 navigator.getUserMedia
-								  || navigator.webkitGetUserMedia
-								  || navigator.mozGetUserMedia
-								  || navigator.msGetUserMedia;
+		navigator.getUserMedia = (
+			navigator.getUserMedia ||
+			navigator.webkitGetUserMedia  ||
+			navigator.mozGetUserMedia  ||
+			navigator.msGetUserMedia
+		);
 							  
-		window.requestAnimationFrame = 
-			window.requestAnimationFrame       ||
+		window.requestAnimationFrame = (
+			window.requestAnimationFrame ||
 			window.webkitRequestAnimationFrame ||
-			window.mozRequestAnimationFrame    ||
+			window.mozRequestAnimationFrame ||
 			function( callback ){
 				window.setTimeout(callback, 1000 / 60);
-	        };
+	        }
+		);
 	},
 	
 	addWalkers : function( number ) {
@@ -171,9 +106,8 @@ TwoScene.prototype = {
 		//this.stats.update();
 		
 		//this.context.clearRect(0,0,this.width, this.height);
-		
-		if(this.flip) this.updateColorSample();
-		this.flip = !this.flip;
+
+		this.webcam.update();
 		this.drawWalkers();
 	}
 	
@@ -215,7 +149,6 @@ Walker.prototype = {
 		this.x %= this.scene.width;
 		this.y %= this.scene.height;
 		
-		
 		this.hue %= 360;
 	},
 	
@@ -225,7 +158,7 @@ Walker.prototype = {
 		
 		if(distanceSq > this.maxDistanceSq) return;
 		
-		this.scene.sampleColor( this );
+		this.scene.webcam.sampleColor( this );
 		
 		this.scene.context.strokeStyle = this.scene.rgbToFillStyle(
 			this.r,
@@ -244,6 +177,90 @@ Walker.prototype = {
 		this.scene.context.closePath();
 	}
 	
+};
+
+var WebcamSampler = function( scene ) {
+	
+	this.scene = scene;
+	this.flip = true;
+	
+	this.$video = $('<video autoplay></video>');
+	this.video = this.$video.get(0);
+	this.$video.hide().appendTo('body');
+	
+	this.$canvas = $('<canvas></canvas>');
+	this.$canvas.hide().appendTo('body');
+	this.canvas = this.$canvas.get(0);
+	this.context = this.canvas.getContext('2d');
+	
+	this.webcamPromise = this.startWebcam();
+	this.attachWebcamToVideo();
+};
+
+WebcamSampler.prototype = {
+
+	startWebcam : function() {
+		
+		var deferred = new $.Deferred();
+		
+		navigator.getUserMedia ({
+				video: {
+					mandatory: { maxWidth: 320, maxHeight: 180	}
+				  },
+				audio: false
+			},
+			function(localMediaStream) {
+				deferred.resolve(localMediaStream);
+			},
+			function( error ) {
+				deferred.reject( error );
+			}
+		);
+		
+		return 	deferred.promise();
+	},
+	
+	attachWebcamToVideo : function() {
+		$.when(this.webcamPromise).then( function(localMediaStream) {
+
+			this.video.src = window.URL.createObjectURL(localMediaStream);
+			this.canvas.width = this.$video.width();
+			this.canvas.height = this.$video.height();
+			
+			this.scene.loop();
+			
+		}.bind(this), function( error ) {
+			$('#webcam-error').show();
+			console.log(error);
+		}).always(function() {
+			$('#webcam-please').hide();
+		});
+	},
+	
+	updateColorSample : function() {
+		this.context.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height);
+		this.imageData = this.context.getImageData(0, 0, this.canvas.width, this.canvas.height);
+	},
+	
+	sampleColor : function( walker ) {
+		if(this.imageData) {
+			var x = Math.floor(((this.scene.width - walker.x) / this.scene.width) * this.imageData.width);
+			var y = Math.floor((walker.y / this.scene.height) * this.imageData.height);
+			
+			var offset = (x + y * this.imageData.width) * 4;
+			
+			walker.r = this.imageData.data[offset + 0];
+			walker.g = this.imageData.data[offset + 1];
+			walker.b = this.imageData.data[offset + 2];
+			
+		}
+	},
+	
+	update : function() {
+		if(this.flip) this.updateColorSample();
+		this.flip = !this.flip;
+		
+	}
 };
 
 var twoScene;
