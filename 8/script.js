@@ -116,7 +116,7 @@ TwoScene.prototype = {
 var Walker = function(scene) {
 	this.scene = scene;
 	this.x = this.scene.width * Math.random();
-	this.y = this.scene.height * Math.random();
+	this.y = this.scene.height / 2;
 	this.prevX = this.x;
 	this.prevY = this.y;
 	this.moveStep = 20;
@@ -131,6 +131,8 @@ var Walker = function(scene) {
 };
 
 Walker.prototype = {
+	
+	alphabet : "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".split(""),
 	
 	hueStart : 360 * Math.random(),
 	
@@ -175,6 +177,21 @@ Walker.prototype = {
 		this.scene.context.lineTo(this.x, this.y);
 		this.scene.context.stroke();
 		this.scene.context.closePath();
+		
+		
+		/*
+		var letter = Math.floor( this.alphabet.length * Math.random() );
+		this.scene.webcam.sampleColor( this );
+		
+		this.scene.context.font = [ (Math.random() * 4 + 9) , "px sans-serif"].join("");
+		this.scene.context.fillStyle = this.scene.rgbToFillStyle(
+			this.r,
+			this.g,
+			this.b,
+			0.4
+		);
+		this.scene.context.fillText(this.alphabet[letter], this.x, this.y);
+		*/
 	}
 	
 };
