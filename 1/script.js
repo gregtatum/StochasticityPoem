@@ -6,6 +6,7 @@ var TwoScene = function() {
 	this.ratio = window.devicePixelRatio >= 1 ? window.devicePixelRatio : 1;
 	this.context = this.canvas.getContext( '2d' );
 
+	this.setPolyfills();
 	//this.addStats();
 	this.addEventListeners();
 	
@@ -17,6 +18,17 @@ var TwoScene = function() {
 };
 		
 TwoScene.prototype = {
+	
+	setPolyfills : function() {					  
+		window.requestAnimationFrame = (
+			window.requestAnimationFrame ||
+			window.webkitRequestAnimationFrame ||
+			window.mozRequestAnimationFrame ||
+			function( callback ){
+				window.setTimeout(callback, 1000 / 60);
+	        }
+		);
+	},
 	
 	addWalkers : function( number ) {
 		

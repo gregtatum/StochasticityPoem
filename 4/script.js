@@ -9,6 +9,7 @@ var TwoScene = function() {
 	this.multiplyChance = 1 / 240;
 	this.maxWalkers = 200;
 	
+	this.setPolyfills();
 	//this.addStats();
 	this.addEventListeners();
 	
@@ -20,6 +21,17 @@ var TwoScene = function() {
 };
 		
 TwoScene.prototype = {
+	
+	setPolyfills : function() {					  
+		window.requestAnimationFrame = (
+			window.requestAnimationFrame ||
+			window.webkitRequestAnimationFrame ||
+			window.mozRequestAnimationFrame ||
+			function( callback ){
+				window.setTimeout(callback, 1000 / 60);
+	        }
+		);
+	},
 	
 	addWalkers : function( number ) {
 		
