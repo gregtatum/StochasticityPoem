@@ -141,7 +141,6 @@ Walker.prototype = {
 	},
 	
 	draw : function() {
-		this.scene.context.beginPath();
 		this.scene.context.fillStyle = this.scene.hslToFillStyle(this.hue, 100, 50, 0.5);
 		this.scene.context.fillRect(
 			this.x,
@@ -149,7 +148,6 @@ Walker.prototype = {
 			this.size,
 			this.size
 		);
-		this.scene.context.fill();
 	}
 	
 };
